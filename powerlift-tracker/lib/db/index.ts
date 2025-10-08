@@ -103,15 +103,19 @@ export const db = {
     athletes: {
       findMany: async (options?: any) => {
         console.log('🏃 Поиск атлетов findMany:', options);
+        console.log('🏃 Всего атлетов в памяти:', inMemoryStorage.athletes.length);
+        console.log('🏃 Атлеты в памяти:', inMemoryStorage.athletes.map(a => ({ id: a.id, name: a.name, userId: a.userId })));
         let result = inMemoryStorage.athletes;
         
-        // Фильтрация по userId если указано
-        if (options?.where) {
-          // Простая логика для демонстрации - фильтруем по userId
-          const globalUserId = (global as any).__currentUserId;
-          if (globalUserId) {
-            result = result.filter(athlete => athlete.userId === globalUserId);
-          }
+        // Фильтрация по userId - всегда фильтруем по глобальному userId
+        const globalUserId = (global as any).__currentUserId;
+        console.log('🏃 Глобальный userId:', globalUserId);
+        
+        if (globalUserId) {
+          result = result.filter(athlete => athlete.userId === globalUserId);
+          console.log('🏃 Атлеты после фильтрации по userId:', result.map(a => ({ id: a.id, name: a.name, userId: a.userId })));
+        } else {
+          console.log('🏃 Нет глобального userId, показываем всех атлетов');
         }
         
         console.log('🏃 Найдено атлетов:', result.length);
@@ -136,9 +140,7 @@ export const db = {
           delete (global as any).__currentAthleteId;
         }
         
-        if (globalUserId) {
-          delete (global as any).__currentUserId;
-        }
+        // НЕ удаляем __currentUserId, так как он может понадобиться для других запросов
         
         console.log('🏃 Найден атлет:', athlete ? { id: athlete.id, name: athlete.name } : null);
         return athlete;
