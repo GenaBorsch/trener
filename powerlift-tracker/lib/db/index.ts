@@ -34,12 +34,22 @@ const inMemoryStorage = {
   exercises: [] as Exercise[],
 };
 
-// Создаем тестового пользователя при инициализации
+// Создаем тестовых пользователей при инициализации
 if (inMemoryStorage.users.length === 0) {
+  // Пользователь из QUICKSTART.md
+  inMemoryStorage.users.push({
+    id: 'trainer-user',
+    email: 'trainer@powerlift.com',
+    passwordHash: '$2b$10$sN..dmD.16HSM6rcKaYANuY8xFi9A5GHfHy60Y78cGBF563pTS6mC', // password123
+    name: 'Тренер',
+    createdAt: new Date(),
+  });
+
+  // Дополнительный демо пользователь
   inMemoryStorage.users.push({
     id: 'demo-user-1',
     email: 'admin@example.com',
-    passwordHash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
+    passwordHash: '$2b$10$SsdFUqeNzN17pr31tA1BPu0cjxyrC/RqP4lyLMldd4pw.akMOC5Vy', // password
     name: 'Демо Тренер',
     createdAt: new Date(),
   });
@@ -69,9 +79,32 @@ export const db = {
   query: {
     users: {
       findFirst: async (options: any) => {
-        const user = inMemoryStorage.users.find(u => 
-          options.where && u.email === options.where.email
-        );
+        console.log('🔍 Поиск пользователя:', options);
+        console.log('📊 Пользователи в памяти:', inMemoryStorage.users.map(u => ({ id: u.id, email: u.email })));
+        
+        if (!options || !options.where) {
+          return null;
+        }
+        
+        // Обрабатываем разные типы условий where
+        let email = null;
+        if (typeof options.where === 'function') {
+          // Если where - это функция (например, eq(users.email, email))
+          // Попробуем найти email в переданных данных
+          const whereStr = options.where.toString();
+          console.log('🔧 Where function:', whereStr);
+          return null; // Пока не поддерживаем функции
+        } else if (options.where.email) {
+          email = options.where.email;
+        } else if (options.where._value) {
+          email = options.where._value;
+        }
+        
+        console.log('📧 Ищем email:', email);
+        
+        const user = inMemoryStorage.users.find(u => u.email === email);
+        console.log('👤 Найден пользователь:', user ? { id: user.id, email: user.email } : null);
+        
         return user || null;
       },
     },
