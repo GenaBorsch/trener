@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
-import { athletes, plans, planExercises, exercises } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
 import { Packer } from 'docx';
 import { generateDocxDocument } from '@/lib/utils/export-docx';
+import { initializeDemoData } from '@/lib/utils/init-demo-data';
 
 export async function GET(
   request: NextRequest,
@@ -18,47 +17,61 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Инициализируем базу данных (это запустит инициализацию хранилища)
+    await db.select().from('users');
+    
+    // Инициализируем демо-данные (планы и логи)
+    initializeDemoData();
+
+    // Устанавливаем глобальные переменные для поиска
+    (global as any).__currentUserId = session.user.id;
+    (global as any).__currentAthleteIdFromUrl = id;
+
     // Получаем атлета
-    const athlete = await db.query.athletes.findFirst({
-      where: and(
-        eq(athletes.id, id),
-        eq(athletes.userId, session.user.id)
-      ),
-    });
+    const athlete = await db.query.athletes.findFirst();
 
     if (!athlete) {
       return NextResponse.json({ error: 'Athlete not found' }, { status: 404 });
     }
 
-    // Получаем все планы атлета с упражнениями
-    const athletePlans = await db.query.plans.findMany({
-      where: eq(plans.athleteId, id),
-      orderBy: (plans, { asc }) => [asc(plans.week), asc(plans.workoutNumber)],
-      with: {
-        planExercises: {
-          with: {
-            exercise: true
-          },
-          orderBy: (planExercises, { asc }) => [asc(planExercises.orderIndex)],
-        }
-      }
-    });
+    // Получаем все планы атлета
+    (global as any).__currentAthleteId = id;
+    const athletePlans = await db.query.plans.findMany();
+
+    // Получаем все упражнения пользователя
+    const allExercises = await db.query.exercises.findMany();
+
+    // Получаем все упражнения планов
+    const storage = (global as any).__inMemoryStorage;
+    const allPlanExercises = storage?.planExercises || [];
 
     // Преобразуем данные в формат для экспорта
-    const formattedPlans = athletePlans.map(plan => ({
-      week: plan.week,
-      workoutNumber: plan.workoutNumber,
-      type: plan.type,
-      notes: plan.notes,
-      exercises: plan.planExercises.map(pe => ({
-        name: pe.exercise.name,
-        series: [{
-          weight: pe.targetWeight || 0,
-          reps: pe.targetReps || 0,
-          sets: pe.targetSets || 1
-        }]
-      }))
-    }));
+    const formattedPlans = athletePlans
+      .sort((a, b) => a.week - b.week || a.workoutNumber - b.workoutNumber)
+      .map(plan => {
+        // Находим упражнения для этого плана
+        const planExercisesForPlan = allPlanExercises
+          .filter(pe => pe.planId === plan.id)
+          .sort((a, b) => a.orderIndex - b.orderIndex);
+
+        return {
+          week: plan.week,
+          workoutNumber: plan.workoutNumber,
+          type: plan.type,
+          notes: plan.notes,
+          exercises: planExercisesForPlan.map(pe => {
+            const exercise = allExercises.find(ex => ex.id === pe.exerciseId);
+            return {
+              name: exercise?.name || 'Неизвестное упражнение',
+              series: [{
+                weight: pe.targetWeight || 0,
+                reps: pe.targetReps || 0,
+                sets: pe.targetSets || 1
+              }]
+            };
+          })
+        };
+      });
 
     // Генерируем документ
     const doc = generateDocxDocument({

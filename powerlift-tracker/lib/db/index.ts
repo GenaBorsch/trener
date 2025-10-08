@@ -38,6 +38,51 @@ interface Exercise {
   createdAt: Date;
 }
 
+interface Plan {
+  id: string;
+  athleteId: string;
+  week: number;
+  workoutNumber: number;
+  date?: Date;
+  type: 'regular' | 'test';
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface PlanExercise {
+  id: string;
+  planId: string;
+  exerciseId: string;
+  orderIndex: number;
+  targetWeight?: number;
+  targetReps?: number;
+  targetSets?: number;
+  notes?: string;
+  createdAt: Date;
+}
+
+interface WorkoutLog {
+  id: string;
+  planId?: string;
+  athleteId: string;
+  date: Date;
+  comment?: string;
+  createdAt: Date;
+}
+
+interface ExerciseLog {
+  id: string;
+  workoutLogId: string;
+  planExerciseId?: string;
+  exerciseId: string;
+  actualWeight?: number;
+  actualReps?: number;
+  actualSets?: number;
+  notes?: string;
+  createdAt: Date;
+}
+
 // Глобальное in-memory хранилище для serverless окружения
 function getGlobalStorage() {
   if (!(global as any).__inMemoryStorage) {
@@ -47,6 +92,10 @@ function getGlobalStorage() {
       users: [] as User[],
       athletes: [] as Athlete[],
       exercises: [] as Exercise[],
+      plans: [] as Plan[],
+      planExercises: [] as PlanExercise[],
+      workoutLogs: [] as WorkoutLog[],
+      exerciseLogs: [] as ExerciseLog[],
     };
 
     // Создаем тестовых пользователей
@@ -198,6 +247,10 @@ function getGlobalStorage() {
       users: (global as any).__inMemoryStorage.users.length,
       athletes: (global as any).__inMemoryStorage.athletes.length,
       exercises: (global as any).__inMemoryStorage.exercises.length,
+      plans: (global as any).__inMemoryStorage.plans.length,
+      planExercises: (global as any).__inMemoryStorage.planExercises.length,
+      workoutLogs: (global as any).__inMemoryStorage.workoutLogs.length,
+      exerciseLogs: (global as any).__inMemoryStorage.exerciseLogs.length,
     });
   }
 
@@ -316,15 +369,66 @@ export const db = {
     plans: {
       findMany: async (options?: any) => {
         console.log('📋 Поиск планов findMany:', options);
-        // Заглушка - возвращаем пустой массив планов для демонстрации
-        return [];
+        let result = inMemoryStorage.plans || [];
+        
+        // Фильтрация по athleteId если указано
+        const globalAthleteId = (global as any).__currentAthleteId || (global as any).__currentAthleteIdFromUrl;
+        if (globalAthleteId) {
+          result = result.filter(plan => plan.athleteId === globalAthleteId);
+        }
+        
+        console.log('📋 Найдено планов:', result.length);
+        return result;
+      },
+      findFirst: async (options?: any) => {
+        console.log('📋 Поиск плана findFirst:', options);
+        const plans = inMemoryStorage.plans || [];
+        return plans[0] || null;
       },
     },
     planExercises: {
       findMany: async (options?: any) => {
         console.log('📋 Поиск упражнений планов findMany:', options);
-        // Заглушка - возвращаем пустой массив упражнений планов для демонстрации
-        return [];
+        let result = inMemoryStorage.planExercises || [];
+        
+        // Фильтрация по planId если указано
+        const globalPlanId = (global as any).__currentPlanId;
+        if (globalPlanId) {
+          result = result.filter(pe => pe.planId === globalPlanId);
+        }
+        
+        console.log('📋 Найдено упражнений в планах:', result.length);
+        return result;
+      },
+    },
+    workoutLogs: {
+      findMany: async (options?: any) => {
+        console.log('📝 Поиск логов тренировок findMany:', options);
+        let result = inMemoryStorage.workoutLogs || [];
+        
+        // Фильтрация по athleteId если указано
+        const globalAthleteId = (global as any).__currentAthleteId || (global as any).__currentAthleteIdFromUrl;
+        if (globalAthleteId) {
+          result = result.filter(log => log.athleteId === globalAthleteId);
+        }
+        
+        console.log('📝 Найдено логов тренировок:', result.length);
+        return result;
+      },
+    },
+    exerciseLogs: {
+      findMany: async (options?: any) => {
+        console.log('🏋️ Поиск логов упражнений findMany:', options);
+        let result = inMemoryStorage.exerciseLogs || [];
+        
+        // Фильтрация по workoutLogId если указано
+        const globalWorkoutLogId = (global as any).__currentWorkoutLogId;
+        if (globalWorkoutLogId) {
+          result = result.filter(log => log.workoutLogId === globalWorkoutLogId);
+        }
+        
+        console.log('🏋️ Найдено логов упражнений:', result.length);
+        return result;
       },
     },
   },
@@ -344,6 +448,10 @@ export const db = {
         if (table === 'users') return inMemoryStorage.users;
         if (table === 'athletes') return inMemoryStorage.athletes;
         if (table === 'exercises') return inMemoryStorage.exercises;
+        if (table === 'plans') return inMemoryStorage.plans || [];
+        if (table === 'planExercises') return inMemoryStorage.planExercises || [];
+        if (table === 'workoutLogs') return inMemoryStorage.workoutLogs || [];
+        if (table === 'exerciseLogs') return inMemoryStorage.exerciseLogs || [];
         return [];
       },
     }),
@@ -379,6 +487,51 @@ export const db = {
           inMemoryStorage.exercises.push(newExercise);
           console.log('💪 Создано упражнение:', newExercise.id, newExercise.name);
           return [newExercise];
+        }
+        if (table === 'plans') {
+          const newPlan = { 
+            ...data, 
+            id: `plan-${Date.now()}`, 
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          if (!inMemoryStorage.plans) inMemoryStorage.plans = [];
+          inMemoryStorage.plans.push(newPlan);
+          console.log('📋 Создан план:', newPlan.id);
+          return [newPlan];
+        }
+        if (table === 'planExercises') {
+          const newPlanExercise = { 
+            ...data, 
+            id: `pe-${Date.now()}`, 
+            createdAt: new Date()
+          };
+          if (!inMemoryStorage.planExercises) inMemoryStorage.planExercises = [];
+          inMemoryStorage.planExercises.push(newPlanExercise);
+          console.log('📋 Создано упражнение в плане:', newPlanExercise.id);
+          return [newPlanExercise];
+        }
+        if (table === 'workoutLogs') {
+          const newWorkoutLog = { 
+            ...data, 
+            id: `wl-${Date.now()}`, 
+            createdAt: new Date()
+          };
+          if (!inMemoryStorage.workoutLogs) inMemoryStorage.workoutLogs = [];
+          inMemoryStorage.workoutLogs.push(newWorkoutLog);
+          console.log('📝 Создан лог тренировки:', newWorkoutLog.id);
+          return [newWorkoutLog];
+        }
+        if (table === 'exerciseLogs') {
+          const newExerciseLog = { 
+            ...data, 
+            id: `el-${Date.now()}`, 
+            createdAt: new Date()
+          };
+          if (!inMemoryStorage.exerciseLogs) inMemoryStorage.exerciseLogs = [];
+          inMemoryStorage.exerciseLogs.push(newExerciseLog);
+          console.log('🏋️ Создан лог упражнения:', newExerciseLog.id);
+          return [newExerciseLog];
         }
         return [data];
       },
@@ -451,4 +604,6 @@ export const users = 'users';
 export const athletes = 'athletes';
 export const exercises = 'exercises';
 export const plans = 'plans';
-export const logs = 'logs';
+export const planExercises = 'planExercises';
+export const workoutLogs = 'workoutLogs';
+export const exerciseLogs = 'exerciseLogs';

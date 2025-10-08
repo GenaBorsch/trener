@@ -12,6 +12,7 @@
     "db:studio": "drizzle-kit studio",
     "create-user": "tsx scripts/create-user.ts",
     "seed-exercises": "tsx scripts/seed-exercises.ts",
+    "seed-plans": "tsx scripts/seed-plans.ts",
     "check-db": "tsx scripts/check-db.ts"
   },
   "dependencies": {
