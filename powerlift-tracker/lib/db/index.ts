@@ -102,12 +102,65 @@ export const db = {
     },
     athletes: {
       findMany: async (options?: any) => {
-        return inMemoryStorage.athletes;
+        console.log('🏃 Поиск атлетов findMany:', options);
+        let result = inMemoryStorage.athletes;
+        
+        // Фильтрация по userId если указано
+        if (options?.where) {
+          // Простая логика для демонстрации - фильтруем по userId
+          const globalUserId = (global as any).__currentUserId;
+          if (globalUserId) {
+            result = result.filter(athlete => athlete.userId === globalUserId);
+          }
+        }
+        
+        console.log('🏃 Найдено атлетов:', result.length);
+        return result;
+      },
+      findFirst: async (options?: any) => {
+        console.log('🏃 Поиск атлета findFirst:', options);
+        
+        // Для демонстрации используем глобальные переменные
+        const globalUserId = (global as any).__currentUserId;
+        const globalAthleteId = (global as any).__currentAthleteId;
+        
+        let athlete = null;
+        
+        if (globalAthleteId) {
+          athlete = inMemoryStorage.athletes.find(a => 
+            a.id === globalAthleteId && 
+            (!globalUserId || a.userId === globalUserId)
+          );
+          console.log('🏃 Поиск по ID:', globalAthleteId, 'найден:', !!athlete);
+          // Очищаем глобальную переменную
+          delete (global as any).__currentAthleteId;
+        }
+        
+        if (globalUserId) {
+          delete (global as any).__currentUserId;
+        }
+        
+        console.log('🏃 Найден атлет:', athlete ? { id: athlete.id, name: athlete.name } : null);
+        return athlete;
       },
     },
     exercises: {
       findMany: async (options?: any) => {
-        return inMemoryStorage.exercises;
+        console.log('💪 Поиск упражнений findMany:', options);
+        let result = inMemoryStorage.exercises;
+        
+        // Фильтрация по userId если указано
+        if (options?.where) {
+          // Простая логика для демонстрации - фильтруем по userId
+          const globalUserId = (global as any).__currentUserId;
+          if (globalUserId) {
+            result = result.filter(exercise => exercise.userId === globalUserId);
+          }
+        }
+        
+        console.log('💪 Найдено упражнений:', result.length);
+        console.log('💪 Упражнения:', result.map(e => ({ id: e.id, name: e.name, userId: e.userId })));
+        return result;
       },
     },
   },
@@ -119,19 +172,96 @@ export const db = {
   insert: (table: any) => ({
     values: (data: any) => ({
       returning: () => {
+        console.log('💾 Вставка данных в таблицу:', table, data);
+        
         if (table === 'users') {
           const newUser = { ...data, id: `user-${Date.now()}`, createdAt: new Date() };
           inMemoryStorage.users.push(newUser);
+          console.log('👤 Создан пользователь:', newUser.id);
           return [newUser];
         }
         if (table === 'athletes') {
-          const newAthlete = { ...data, id: `athlete-${Date.now()}`, createdAt: new Date() };
+          const newAthlete = { 
+            ...data, 
+            id: `athlete-${Date.now()}`, 
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
           inMemoryStorage.athletes.push(newAthlete);
+          console.log('🏃 Создан атлет:', newAthlete.id, newAthlete.name);
           return [newAthlete];
+        }
+        if (table === 'exercises') {
+          const newExercise = { 
+            ...data, 
+            id: `exercise-${Date.now()}`, 
+            createdAt: new Date()
+          };
+          inMemoryStorage.exercises.push(newExercise);
+          console.log('💪 Создано упражнение:', newExercise.id, newExercise.name);
+          return [newExercise];
         }
         return [data];
       },
     }),
+  }),
+  update: (table: any) => ({
+    set: (data: any) => ({
+      where: (condition: any) => ({
+        returning: () => {
+          console.log('🔄 Обновление данных в таблице:', table, data);
+          
+          if (table === 'athletes') {
+            const athleteId = (global as any).__currentAthleteId;
+            const userId = (global as any).__currentUserId;
+            
+            if (athleteId) {
+              const athleteIndex = inMemoryStorage.athletes.findIndex(a => 
+                a.id === athleteId && (!userId || a.userId === userId)
+              );
+              
+              if (athleteIndex !== -1) {
+                inMemoryStorage.athletes[athleteIndex] = {
+                  ...inMemoryStorage.athletes[athleteIndex],
+                  ...data,
+                  updatedAt: new Date()
+                };
+                console.log('🏃 Обновлен атлет:', athleteId);
+                return [inMemoryStorage.athletes[athleteIndex]];
+              }
+            }
+          }
+          
+          console.log('❌ Не удалось обновить запись');
+          return [];
+        },
+      }),
+    }),
+  }),
+  delete: (table: any) => ({
+    where: (condition: any) => {
+      console.log('🗑️ Удаление из таблицы:', table);
+      
+      if (table === 'athletes') {
+        const athleteId = (global as any).__currentAthleteId;
+        const userId = (global as any).__currentUserId;
+        
+        if (athleteId) {
+          const athleteIndex = inMemoryStorage.athletes.findIndex(a => 
+            a.id === athleteId && (!userId || a.userId === userId)
+          );
+          
+          if (athleteIndex !== -1) {
+            inMemoryStorage.athletes.splice(athleteIndex, 1);
+            console.log('🏃 Удален атлет:', athleteId);
+            return { success: true };
+          }
+        }
+      }
+      
+      console.log('❌ Не удалось удалить запись');
+      return { success: false };
+    },
   }),
 };
 

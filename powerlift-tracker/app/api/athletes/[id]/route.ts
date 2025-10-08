@@ -27,6 +27,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Хак для in-memory демонстрации: сохраняем ID в глобальных переменных
+    (global as any).__currentUserId = session.user.id;
+    (global as any).__currentAthleteId = id;
+    
     const athlete = await db.query.athletes.findFirst({
       where: and(
         eq(athletes.id, id),
@@ -65,6 +69,10 @@ export async function PUT(
     const validatedData = athleteUpdateSchema.parse(body);
 
     // Получаем текущего атлета для обновления истории PM
+    // Хак для in-memory демонстрации: сохраняем ID в глобальных переменных
+    (global as any).__currentUserId = session.user.id;
+    (global as any).__currentAthleteId = id;
+    
     const currentAthlete = await db.query.athletes.findFirst({
       where: and(
         eq(athletes.id, id),
@@ -95,6 +103,10 @@ export async function PUT(
       ];
     }
 
+    // Хак для in-memory демонстрации: сохраняем ID в глобальных переменных для UPDATE
+    (global as any).__currentUserId = session.user.id;
+    (global as any).__currentAthleteId = id;
+    
     const updated = await db
       .update(athletes)
       .set({
@@ -143,6 +155,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Хак для in-memory демонстрации: сохраняем ID в глобальных переменных
+    (global as any).__currentUserId = session.user.id;
+    (global as any).__currentAthleteId = id;
+    
     await db
       .delete(athletes)
       .where(and(

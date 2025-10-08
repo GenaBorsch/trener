@@ -24,6 +24,9 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Хак для in-memory демонстрации: сохраняем userId в глобальной переменной
+    (global as any).__currentUserId = session.user.id;
+    
     const allAthletes = await db.query.athletes.findMany({
       where: eq(athletes.userId, session.user.id),
       orderBy: (athletes, { desc }) => [desc(athletes.createdAt)],

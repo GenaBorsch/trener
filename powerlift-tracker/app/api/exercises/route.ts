@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
           eq(exercises.isArchived, false)
         );
 
+    // Хак для in-memory демонстрации: сохраняем userId в глобальной переменной
+    (global as any).__currentUserId = session.user.id;
+    
     const allExercises = await db.query.exercises.findMany({
       where: whereConditions,
       orderBy: (exercises, { asc }) => [asc(exercises.category), asc(exercises.name)],
