@@ -307,6 +307,25 @@ export const db = {
         console.log('💪 Упражнения:', result.map(e => ({ id: e.id, name: e.name, userId: e.userId })));
         return result;
       },
+      findFirst: async (options?: any) => {
+        console.log('💪 Поиск упражнения findFirst:', options);
+        // Простая заглушка - возвращаем первое упражнение
+        return inMemoryStorage.exercises[0] || null;
+      },
+    },
+    plans: {
+      findMany: async (options?: any) => {
+        console.log('📋 Поиск планов findMany:', options);
+        // Заглушка - возвращаем пустой массив планов для демонстрации
+        return [];
+      },
+    },
+    planExercises: {
+      findMany: async (options?: any) => {
+        console.log('📋 Поиск упражнений планов findMany:', options);
+        // Заглушка - возвращаем пустой массив упражнений планов для демонстрации
+        return [];
+      },
     },
   },
   select: () => ({
