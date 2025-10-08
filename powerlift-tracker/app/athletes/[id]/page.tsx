@@ -15,6 +15,10 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
     redirect('/login');
   }
 
+  // Хак для in-memory демонстрации: устанавливаем глобальные переменные
+  (global as any).__currentUserId = session.user.id;
+  (global as any).__currentAthleteIdFromUrl = id;
+
   const athlete = await db.query.athletes.findFirst({
     where: and(
       eq(athletes.id, id),

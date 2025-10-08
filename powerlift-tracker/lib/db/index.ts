@@ -258,6 +258,8 @@ export const db = {
         const globalUserId = (global as any).__currentUserId;
         const globalAthleteId = (global as any).__currentAthleteId;
         
+        console.log('🏃 Глобальные переменные:', { globalUserId, globalAthleteId });
+        
         let athlete = null;
         
         if (globalAthleteId) {
@@ -265,9 +267,23 @@ export const db = {
             a.id === globalAthleteId && 
             (!globalUserId || a.userId === globalUserId)
           );
-          console.log('🏃 Поиск по ID:', globalAthleteId, 'найден:', !!athlete);
+          console.log('🏃 Поиск по globalAthleteId:', globalAthleteId, 'найден:', !!athlete);
           // Очищаем глобальную переменную
           delete (global as any).__currentAthleteId;
+        } else {
+          // Хак для демонстрации: если нет globalAthleteId, 
+          // пытаемся найти атлета по ID из глобальной переменной __currentAthleteIdFromUrl
+          const athleteIdFromUrl = (global as any).__currentAthleteIdFromUrl;
+          console.log('🏃 ID атлета из URL:', athleteIdFromUrl);
+          
+          if (athleteIdFromUrl && globalUserId) {
+            athlete = inMemoryStorage.athletes.find(a => 
+              a.id === athleteIdFromUrl && a.userId === globalUserId
+            );
+            console.log('🏃 Поиск по URL ID:', athleteIdFromUrl, 'найден:', !!athlete);
+            // Очищаем переменную
+            delete (global as any).__currentAthleteIdFromUrl;
+          }
         }
         
         // НЕ удаляем __currentUserId, так как он может понадобиться для других запросов
