@@ -78,7 +78,7 @@ export async function GET(
     const fileNameAscii = 'athlete_plan.docx'; // Безопасное ASCII имя для старых браузеров
 
     // Возвращаем файл
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as BodyInit, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'Content-Disposition': `attachment; filename="${fileNameAscii}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
