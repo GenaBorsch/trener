@@ -1,0 +1,17 @@
+# Команды для подключения к GitHub
+# Замените 'ваш-username' на ваш реальный GitHub username
+
+# 1. Переименовать ветку master в main (современный стандарт)
+git branch -M main
+
+# 2. Добавить удаленный репозиторий (HTTPS - проще для начала)
+git remote add origin https://github.com/ваш-username/powerlift-tracker.git
+
+# 3. Загрузить код на GitHub
+git push -u origin main
+
+# Альтернативно, если хотите использовать SSH (требует настройки SSH ключей):
+# git remote add origin git@github.com:ваш-username/powerlift-tracker.git
+
+# Проверить подключение:
+git remote -v
