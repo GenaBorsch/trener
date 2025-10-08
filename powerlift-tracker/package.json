@@ -12,8 +12,7 @@
     "db:studio": "drizzle-kit studio",
     "create-user": "tsx scripts/create-user.ts",
     "seed-exercises": "tsx scripts/seed-exercises.ts",
-    "check-db": "tsx scripts/check-db.ts",
-    "init-production": "tsx scripts/init-production.ts"
+    "check-db": "tsx scripts/check-db.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.1",
