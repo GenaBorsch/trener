@@ -1,7 +1,7 @@
 [build]
   base = "powerlift-tracker"
-  command = "npm ci && npx @netlify/plugin-nextjs"
-  publish = "powerlift-tracker/.next"
+  command = "npm install && npm run build"
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18"

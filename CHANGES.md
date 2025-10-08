@@ -308,3 +308,4 @@ export const exercisesRelations = relations(exercises, ({ one, many }) => ({
 
 
 
+
