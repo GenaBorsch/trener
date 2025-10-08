@@ -82,30 +82,22 @@ export const db = {
         console.log('🔍 Поиск пользователя:', options);
         console.log('📊 Пользователи в памяти:', inMemoryStorage.users.map(u => ({ id: u.id, email: u.email })));
         
-        if (!options || !options.where) {
-          return null;
+        // Для in-memory демонстрации создаем простую заглушку
+        // В реальном проекте используйте настоящую базу данных
+        
+        // Если есть глобальная переменная с email (хак для демонстрации)
+        const globalEmail = (global as any).__currentAuthEmail;
+        if (globalEmail) {
+          console.log('📧 Используем глобальный email:', globalEmail);
+          const user = inMemoryStorage.users.find(u => u.email === globalEmail);
+          console.log('👤 Найден пользователь:', user ? { id: user.id, email: user.email } : null);
+          // Очищаем глобальную переменную
+          delete (global as any).__currentAuthEmail;
+          return user || null;
         }
         
-        // Обрабатываем разные типы условий where
-        let email = null;
-        if (typeof options.where === 'function') {
-          // Если where - это функция (например, eq(users.email, email))
-          // Попробуем найти email в переданных данных
-          const whereStr = options.where.toString();
-          console.log('🔧 Where function:', whereStr);
-          return null; // Пока не поддерживаем функции
-        } else if (options.where.email) {
-          email = options.where.email;
-        } else if (options.where._value) {
-          email = options.where._value;
-        }
-        
-        console.log('📧 Ищем email:', email);
-        
-        const user = inMemoryStorage.users.find(u => u.email === email);
-        console.log('👤 Найден пользователь:', user ? { id: user.id, email: user.email } : null);
-        
-        return user || null;
+        console.log('❌ Не удалось найти email для поиска');
+        return null;
       },
     },
     athletes: {

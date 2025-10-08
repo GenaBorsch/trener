@@ -60,6 +60,9 @@ export const authConfig = {
         if (parsedCredentials.success) {
           const { email, password } = parsedCredentials.data;
           
+          // Хак для in-memory демонстрации: сохраняем email в глобальной переменной
+          (global as any).__currentAuthEmail = email;
+          
           const user = await db.query.users.findFirst({
             where: eq(users.email, email),
           });
